@@ -14,10 +14,9 @@
 #include "Mesh.h"
 #include <map>
 
-namespace OBJReader
-{
+namespace OBJReader {
 
-	enum ObjTypes {
+	enum tokenType {
 		NONE,
 		V,
 		VN,
@@ -29,25 +28,21 @@ namespace OBJReader
 		USEMTL
 	};
 
-	typedef std::map<std::string, ObjTypes> TypesMap;
+	typedef std::map<std::string, tokenType> TypesMap;
 	static TypesMap typesMap = {
-		{ "v", ObjTypes::V },
-		{ "vn", ObjTypes::VN },
-		{ "vt", ObjTypes::VT },
-		{ "f", ObjTypes::F },
-		{ "g", ObjTypes::G },
-		{ "mtllib", ObjTypes::MTLLIB},
-		{ "#", ObjTypes::COMMENTARY },
-		{ "usemtl", ObjTypes::USEMTL }
+		{ "v", tokenType::V },
+	{ "vn", tokenType::VN },
+	{ "vt", tokenType::VT },
+	{ "f", tokenType::F },
+	{ "g", tokenType::G },
+	{ "mtllib", tokenType::MTLLIB },
+	{ "#", tokenType::COMMENTARY },
+	{ "usemtl", tokenType::USEMTL }
 	};
-
-
-	// TODO: Is it faster to keep the file open in a stream
-	// or to save it all in a single stream and then iterate through it?
 
 	static Mesh* Read(const GLchar* path) {
 
-		Mesh* newMesh = new Mesh();
+		Mesh* mesh = new Mesh();
 
 		std::ifstream file;
 		file.exceptions(std::ifstream::badbit);
@@ -70,48 +65,52 @@ namespace OBJReader
 
 			while (!file.eof()) {
 
-				// Clearing for safety
 				sstream = std::stringstream();
 				line = temp = "";
 
+				//get first line of the file
 				std::getline(file, line);
 
+				//get content of the line
 				sstream << line;
 				sstream >> temp;
 
-				ObjTypes type = typesMap[temp];
+				//get initial token (g, f, etc)
+				tokenType type = typesMap[temp];
 
 				switch (type)
 				{
 				case OBJReader::V:
 				{
-					float x, y, z;	// Is it faster to keep code here or to call another method that does this (for a more clear code)
+					float x, y, z;
 					sstream >> x >> y >> z;
-					newMesh->AddVertex(glm::vec3(x, y, z));
+					mesh->AddVertex(glm::vec3(x, y, z));
 					break;
 				}
 				case OBJReader::VN:
 				{
 					float x, y, z;
 					sstream >> x >> y >> z;
-					newMesh->AddNormal(glm::vec3(x, y, z));
+					mesh->AddNormal(glm::vec3(x, y, z));
 					break;
 				}
 				case OBJReader::VT:
 				{
 					float x, y;
 					sstream >> x >> y;
-					newMesh->AddMapping(glm::vec2(x, y));
+					mesh->AddMapping(glm::vec2(x, y));
 					break;
 				}
 				case OBJReader::F:
 				{
+					//create vectors for each variable
 					std::vector<int> *posV = new std::vector<int>;
 					std::vector<int> *normV = new std::vector<int>;
 					std::vector<int> *texV = new std::vector<int>;
 					std::string token, valueAux;
 					std::stringstream tokenStream;
 
+					//while there is content on the line
 					while (sstream.rdbuf()->in_avail()) {
 
 						token = valueAux = "";
@@ -120,23 +119,23 @@ namespace OBJReader
 						tokenStream = std::stringstream();
 						tokenStream << token;
 
-						if (!token.find('/')) { // Only vertices
+						//on every loop, one subset of the data is analyzed as the f may come on blocks of three (f x1/y1/z1 x2/y2/z2 x3/y3/z3)
+						if (token.find('/') == std::string::npos) { // in case it is only vertices, they are separated by spaces f x y z so there is no /
+																	//std::string.find() returns string::npos in case it does not find any match
 							while (tokenStream.rdbuf()->in_avail()) {
-								std::getline(tokenStream, valueAux, '/');
+								std::getline(tokenStream, valueAux, ' ');
 								posV->push_back(std::atoi(&valueAux[0]));
 							}
 						}
 						else {
 
 							while (tokenStream.rdbuf()->in_avail()) {
-								// Get individual values
-
 								std::getline(tokenStream, valueAux, '/');
 
 								posV->push_back(std::atoi(&valueAux[0]));
 
 								std::getline(tokenStream, valueAux, '/');
-								if (valueAux == "") { // v//n
+								if (valueAux == "") { // v/n
 									std::getline(tokenStream, valueAux, '/');
 									normV->push_back(std::atoi(&valueAux[0]));
 								}
@@ -158,9 +157,9 @@ namespace OBJReader
 					}
 					else {
 						std::cout << "ERROR::OBJREADER::NO GROUP DEFINED FOR FACE AT LINE " << lineCounter << std::endl;
-						
+
 						bool addedGroup = false;
-						std::vector<Group*> *tempGroups = newMesh->GetGroups();
+						std::vector<Group*> *tempGroups = mesh->GetGroups();
 						for (std::vector<Group*>::iterator it = tempGroups->begin(); it != tempGroups->end(); ++it) {
 							if ("NO_GROUP" == (*it)->GetName()) { // Checking if a group with that name already exists
 								currentGroup = *it;
@@ -169,12 +168,10 @@ namespace OBJReader
 							}
 						}
 						if (!addedGroup) {
-							newMesh->AddGroup("NO_GROUP");
-							currentGroup = newMesh->GetGroups()->back();
+							mesh->AddGroup("NO_GROUP");
+							currentGroup = mesh->GetGroups()->back();
 						}
-
 					}
-
 					break;
 				}
 				case OBJReader::G:
@@ -183,7 +180,7 @@ namespace OBJReader
 					std::getline(sstream, name);
 
 					bool addGroup = true;
-					std::vector<Group*> *tempGroups = newMesh->GetGroups();
+					std::vector<Group*> *tempGroups = mesh->GetGroups();
 					for (std::vector<Group*>::iterator it = tempGroups->begin(); it != tempGroups->end(); ++it) {
 						if (name == (*it)->GetName()) { // Checking if a group with that name already exists
 							addGroup = false;
@@ -192,18 +189,17 @@ namespace OBJReader
 						}
 					}
 
-					if (addGroup) {
-						newMesh->AddGroup(name);
-						currentGroup = newMesh->GetGroups()->back();
+					if (addGroup) { //if a group with such name does not exist yet, create it
+						mesh->AddGroup(name);
+						currentGroup = mesh->GetGroups()->back();
 					}
-
 					break;
 				}
-				case OBJReader::MTLLIB:					
+				case OBJReader::MTLLIB: //save the mtlfile on the mesh		
 					std::getline(sstream, mtl_file);
-					newMesh->setMaterialFile(mtl_file.substr(1, std::string::npos));
+					mesh->setMaterialFile(mtl_file.substr(1, std::string::npos));
 					break;
-				case OBJReader::USEMTL:
+				case OBJReader::USEMTL: //save the material of the group to be used from the mtlfile
 					std::getline(sstream, group_mtl);
 					group_mtl = group_mtl.substr(1, std::string::npos);
 					currentGroup->SetMaterialName(group_mtl);
@@ -216,12 +212,11 @@ namespace OBJReader
 					std::cout << "Not a valid line at " << lineCounter << std::endl;
 					break;
 				}
-
 				lineCounter++;
 			}
 
 			file.close();
-			return newMesh;
+			return mesh;
 		}
 		catch (const std::ifstream::failure& e) {
 
@@ -230,12 +225,8 @@ namespace OBJReader
 			}
 
 		}
-
 		file.close();
 		return nullptr;
-
 	}
-
 };
-
 #endif

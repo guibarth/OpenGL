@@ -82,34 +82,93 @@ void Group::SetType(GroupType type) {
 
 void Group::AddFace(std::vector<int>* vertexIndices, std::vector<int>* normalIndices, std::vector<int>* mappingIndices)
 {
-	Face* newFace = new Face(vertexIndices, normalIndices, mappingIndices);
-	this->faces->push_back(newFace);
+	if (vertexIndices->size() > 3) {
+		//faces must be divided on 1, 2, 3 e 1, 3, 4
+		std::vector<int>* verFace1 = new std::vector<int>();
+		std::vector<int>* norFace1 = new std::vector<int>();
+		std::vector<int>* mapFace1 = new std::vector<int>();
+		std::vector<int>* verFace2 = new std::vector<int>();
+		std::vector<int>* norFace2 = new std::vector<int>();
+		std::vector<int>* mapFace2 = new std::vector<int>();
+
+		//first element belongs to the first and second face
+		verFace1->push_back(vertexIndices->front());
+		verFace2->push_back(vertexIndices->front());
+		vertexIndices->erase(vertexIndices->begin());
+		if (normalIndices->size() > 0 && mappingIndices->size() > 0) {
+			norFace1->push_back(normalIndices->front());
+			norFace2->push_back(normalIndices->front());
+			normalIndices->erase(normalIndices->begin());
+			mapFace1->push_back(mappingIndices->front());
+			mapFace2->push_back(mappingIndices->front());
+			mappingIndices->erase(mappingIndices->begin());
+		}
+		//second element belongs to first face only
+		verFace1->push_back(vertexIndices->front());
+		vertexIndices->erase(vertexIndices->begin());
+		if (normalIndices->size() > 0 && mappingIndices->size() > 0) {
+			norFace1->push_back(normalIndices->front());
+			normalIndices->erase(normalIndices->begin());
+			mapFace1->push_back(mappingIndices->front());
+			mappingIndices->erase(mappingIndices->begin());
+		}
+		//third element belongs to both faces
+		verFace1->push_back(vertexIndices->front());
+		verFace2->push_back(vertexIndices->front());
+		vertexIndices->erase(vertexIndices->begin());
+		if (normalIndices->size() > 0 && mappingIndices->size() > 0) {
+			norFace1->push_back(normalIndices->front());
+			norFace2->push_back(normalIndices->front());
+			normalIndices->erase(normalIndices->begin());
+			mapFace1->push_back(mappingIndices->front());
+			mapFace2->push_back(mappingIndices->front());
+			mappingIndices->erase(mappingIndices->begin());
+		}
+		//fourth element only belongs to the second face
+		verFace2->push_back(vertexIndices->front());
+		vertexIndices->erase(vertexIndices->begin());
+		if (normalIndices->size() > 0 && mappingIndices->size() > 0) {
+			norFace2->push_back(normalIndices->front());
+			normalIndices->erase(normalIndices->begin());
+			mapFace2->push_back(mappingIndices->front());
+			mappingIndices->erase(mappingIndices->begin());
+		}
+		//add the two faces to the group	
+		Face* newFace1 = new Face(verFace1, norFace1, mapFace1);
+		this->faces->push_back(newFace1);
+		Face* newFace2 = new Face(verFace2, norFace2, mapFace2);
+		this->faces->push_back(newFace2);
+	}
+	else if (vertexIndices->size() == 3) {
+		Face* newFace = new Face(vertexIndices, normalIndices, mappingIndices);
+		this->faces->push_back(newFace);
+	}
 }
 
-void Group::Bind(std::vector<GLfloat> *vertices){
+void Group::Bind(std::vector<GLfloat> *vertices) {
 	//texture is only set if the group has a material
 	if (this->HasMaterial()) {
 		if (this->GetMaterial()->GetHasTexture()) { //texture is only set if the material has a texture
-			//create the texture
+													//create the texture
 			unsigned int texture;
 			glGenTextures(1, &texture);
 			int textureId = this->GetMaterial()->getTextureId();
-			
+
 			int textureLocation = shaderObj->Uniform("texture1");
 			glUniform1i(textureLocation, textureId);
-			
-			
-			
+
+
+
 			glActiveTexture(GL_TEXTURE0 + textureId);
-			
-			glBindTexture(GL_TEXTURE_2D, textureId);			
+
+			glBindTexture(GL_TEXTURE_2D, textureId);
 
 			//texture-space treatment
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			
+
 			//enable
 			glEnable(GL_DEPTH_TEST);
 			glDepthFunc(GL_LESS);
@@ -128,10 +187,10 @@ void Group::Bind(std::vector<GLfloat> *vertices){
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
 				//the line below works for .jpg files
 				//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, img);
-				std::cout << "Texture image loaded successfully" << std::endl;								
+				std::cout << "Texture image loaded successfully" << std::endl;
 			}
 
-			
+
 			//generate mipmap
 			glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -141,10 +200,10 @@ void Group::Bind(std::vector<GLfloat> *vertices){
 			*/
 			//free memory
 			stbi_image_free(img);
-		}		
+		}
 	}
-	
-	
+
+
 	if (type == NONE) {
 		DefineType();
 	}

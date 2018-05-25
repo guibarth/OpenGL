@@ -58,10 +58,10 @@ int main() {
 	Shader *coreShader = new Shader("Shaders/Core/core.vert", "Shaders/Core/core.frag");
 
 	coreShader->Use();
-		
+
 	//read the necessary obj files to a vector
 	std::vector<Mesh*>* meshVec = new std::vector<Mesh*>();
-	std::string objs = "cenaPaintball.obj end";
+	std::string objs = "cenaPaintball.obj end"; //trout
 	istringstream ss(objs);
 	string temp;
 	ss >> temp;
@@ -70,23 +70,23 @@ int main() {
 		meshVec->push_back(OBJReader::Read(temp.c_str()));
 		ss >> temp;
 	}
-	
+
 	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
 		//read MTL files to the meshes
 		(*obj)->setMaterials(MTLReader::read((*obj)->GetMeterialFile()));
 	}
 
-	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj){
+	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
 		//print material list for all objs
 		std::vector<Material*> *tempMats = (*obj)->GetMaterials();
 		for (std::vector<Material*>::iterator mat = tempMats->begin(); mat != tempMats->end(); ++mat) {
 			std::cout << (*mat)->GetName() << std::endl;
 		}
-	}	
+	}
 
 	//assign materials to the groups within the meshes
 	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
-						
+
 		std::vector<Group*> *tempGroups = (*obj)->GetGroups();
 		std::vector<Material*> *tempMaterials = (*obj)->GetMaterials();
 		std::string name;
@@ -108,7 +108,7 @@ int main() {
 		(*obj)->Bind();
 	}
 
-		
+
 	glm::mat4 model(1.0f);
 	int modelLoc = coreShader->Uniform("model");
 	model = glm::rotate(model, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -122,7 +122,7 @@ int main() {
 	projection = glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
 
 	float angle = 0.0f;
-	
+
 	//setup gLight
 
 	//gLight.position = gCamera.position();
@@ -143,7 +143,7 @@ int main() {
 
 	//texture
 	stbi_set_flip_vertically_on_load(true);
-	
+
 	// setup gCamera
 	gCamera.setPosition(glm::vec3(-4, 0, 17));
 	gCamera.setViewportAspectRatio(800 / 800);
@@ -182,7 +182,7 @@ int main() {
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
+
 		coreShader->Use();
 
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -224,7 +224,7 @@ int main() {
 				}
 			}
 		}
-		
+
 		glfwSwapBuffers(window);
 	}
 	coreShader->Delete();
