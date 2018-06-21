@@ -16,13 +16,7 @@
 #include "MTLReader.h"
 #include "Camera.h"
 
-struct Light {
-	glm::vec3 position;
-	glm::vec3 intensities; //a.k.a. the color of the light
-};
 
-Light gLight;
-tdogl::Camera gCamera;
 
 int main() {
 
@@ -123,31 +117,7 @@ int main() {
 
 	float angle = 0.0f;
 
-	//setup gLight
 
-	//gLight.position = gCamera.position();
-	gLight.position = glm::vec3(0.0f, 1.0f, -30.0f);
-	gLight.intensities = glm::vec3(1, 1, 1); //white
-
-	glm::mat4 camera(1.0f);
-	int camLoc = coreShader->Uniform("camera");
-	camera = gCamera.matrix();
-
-	glm::vec3 position(1.0f);
-	int positionLoc = coreShader->Uniform("light.position");
-	position = gLight.position;
-
-	glm::vec3 intensities(1.0f);
-	int intensitiesLoc = coreShader->Uniform("light.intensities");
-	intensities = gLight.intensities;
-
-	//texture
-	stbi_set_flip_vertically_on_load(true);
-
-	// setup gCamera
-	gCamera.setPosition(glm::vec3(-4, 0, 17));
-	gCamera.setViewportAspectRatio(800 / 800);
-	gCamera.setNearAndFarPlanes(0.5f, 100.0f);
 
 	while (!glfwWindowShouldClose(window)) {
 
@@ -189,10 +159,7 @@ int main() {
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-		glUniformMatrix4fv(camLoc, 1, GL_FALSE, glm::value_ptr(camera));
 
-		glUniformMatrix4fv(positionLoc, 1, GL_FALSE, glm::value_ptr(position));
-		glUniformMatrix4fv(intensitiesLoc, 1, GL_FALSE, glm::value_ptr(intensities));
 
 		std::vector<Group*>* currentGroups = nullptr;
 

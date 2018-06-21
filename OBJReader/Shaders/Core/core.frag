@@ -1,75 +1,63 @@
 #version 330 core
 
-in vec3 v_Position;
-
+in vec3 position_eye;
 in vec2 v_Mapping;
+in vec3 normal_eye;
 
-in vec3 v_Normals;
+uniform mat4 view;
 
-out vec4 color;
+// fixed point light properties
+vec3 light_position_world  = vec3 (10.0, 25.0, 50.0);
+vec3 Ls = vec3 (1.0, 1.0, 1.0); // white specular colour
+vec3 Ld = vec3 (0.7, 0.7, 0.7); // dull white diffuse light colour
+vec3 La = vec3 (0.2, 0.2, 0.2); // grey ambient colour
+  
+// surface reflectance
+vec3 Ks = vec3 (1.0, 1.0, 1.0); // fully reflect specular light
+vec3 Kd = vec3 (1.0, 0.5, 0.0); // orange diffuse surface reflectance
+vec3 Ka = vec3 (1.0, 1.0, 1.0); // fully reflect ambient light
+float specular_exponent = 100.0; // specular 'power'
+
+out vec4 fragment_colour;
 
 uniform sampler2D texture1;
-
 uniform mat4 model;
-
-uniform struct Light {
-  vec3 position;
-  vec3 intensities; //a.k.a the color of the light
-} light;
-
-
-
-float near = 100.0; 
-float far  = 100.0; 
   
-float LinearizeDepth(float depth)
-{
-   float z = depth * 2.0 - 1.0; // back to NDC 
-  return (2.0 * near * far) / (far + near - z * (far - near));	
+void main () {
+	// ambient intensity
+	vec3 Ia = La * Ka;
+
+	// normalize in case interpolation has upset normals' lengths
+	vec3 n_eye = normalize( normal_eye );
+
+	// diffuse intensity
+	// raise light position to eye space
+	vec3 light_position_eye = vec3 (view * vec4 (light_position_world, 1.0));
+	vec3 distance_to_light_eye = light_position_eye - position_eye;
+	vec3 direction_to_light_eye = normalize (distance_to_light_eye);
+	float dot_prod = dot (direction_to_light_eye, n_eye);
+	dot_prod = max (dot_prod, 0.0);
+	vec3 Id = Ld * Kd * dot_prod; // final diffuse intensity
+	
+	// specular intensity
+	vec3 surface_to_viewer_eye = normalize (-position_eye);
+	
+	//vec3 reflection_eye = reflect (-direction_to_light_eye, n_eye);
+	//float dot_prod_specular = dot (reflection_eye, surface_to_viewer_eye);
+	//dot_prod_specular = max (dot_prod_specular, 0.0);
+	//float specular_factor = pow (dot_prod_specular, specular_exponent);
+	
+	// blinn
+	vec3 half_way_eye = normalize (surface_to_viewer_eye + direction_to_light_eye);
+	float dot_prod_specular = max (dot (half_way_eye, n_eye), 0.0);
+	float specular_factor = pow (dot_prod_specular, specular_exponent);
+	
+	vec3 Is = Ls * Ks * specular_factor; // final specular intensity
+	
+	// final colour
+	fragment_colour = vec4 (Is + Id + Ia, 1.0);
+
+	//Texture
+	vec4 texel = texture(texture1, v_Mapping);
+	fragment_colour = fragment_colour * texel * texel.a;
 }
-
-
-/*void main()
-{             
-   float depth = LinearizeDepth(gl_FragCoord.z) / far; // divide by far for demonstration
-
-
-	vec4 texel = texture(texture1, v_Mapping);
-	
-    color = vec4(vec3(depth), 1.0) * texel;
-
-}*/
-
-void main() {
-
-	float depth = LinearizeDepth(gl_FragCoord.z) / far; // divide by far for demonstration
-
-	
-
-    //calculate normal in world coordinates
-    mat3 normalMatrix = transpose(inverse(mat3(model)));
-    vec3 normal = normalize(normalMatrix * v_Normals);
-    
-    //calculate the location of this fragment (pixel) in world coordinates
-    vec3 fragPosition = vec3(model * vec4(v_Position, 1));
-    
-    //calculate the vector from this pixels surface to the light source
-    //vec3 surfaceToLight = light.position - fragPosition;
-	vec3 surfaceToLight = vec3(-15.0f, 40.0f, 50.0f) - fragPosition;
-
-    //calculate the cosine of the angle of incidence
-    float brightness = dot(normal, surfaceToLight) / (length(surfaceToLight) * length(normal));
-    brightness = clamp(brightness, 0, 1);
-
-    //calculate final color of the pixel, based on:
-    // 1. The angle of incidence: brightness
-    // 2. The color/intensities of the light: light.intensities
-    // 3. The texture and texture coord: texture(texture1, v_Mapping)
-    
-	vec4 texel = texture(texture1, v_Mapping);
-	
-	color = vec4(vec3(depth), 1.0) * texel * texel.a * brightness;
-
-
-    //color = vec4(brightness * light.intensities * texel.rgb, texel.a);
-	}
