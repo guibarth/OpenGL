@@ -1,38 +1,32 @@
 #version 330 core
 
-layout ( location = 0 ) in vec3 vPosition;
-layout ( location = 1 ) in vec2 vMapping;
-layout ( location = 2 ) in vec3 vNormals;
-
-out vec3 v_Position;
-out vec2 v_Mapping;
-out vec3 v_Normals;
+layout ( location = 0 ) in vec3 vertex_position;
+layout ( location = 1 ) in vec2 vertex_mapping;
+layout ( location = 2 ) in vec3 vertex_normal;
 
 uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 model;
-//uniform mat4 camera;
+
+out vec3 position_eye;
+out vec2 v_Mapping;
+out vec3 normal_eye;
+
+
 
 void main()
 {
 
 // Pass some variables to the fragment shader
-    v_Position = vPosition;
-	v_Mapping = vMapping;
-    v_Normals = vNormals;
+    position_eye = vertex_position;
+	v_Mapping = vertex_mapping;
+    normal_eye = vertex_normal;
 
-	// Apply all matrix transformations to vert
-    //gl_Position = view * model * vec4(vMapping, 1);
-
-
-	gl_Position = projection * view * model * vec4(vPosition, 1.0);
+	position_eye = vec3 (view * model * vec4 (vertex_position, 1.0));
+	normal_eye = vec3 (view * model * vec4 (vertex_normal, 0.0));
 	
-	//gl_Position = camera * model * vec4(vPosition, 1);
 	
-
-
-
-	
-    
+	gl_Position = projection * vec4 (position_eye, 1.0);
+	//gl_Position = projection * view * model * vec4(position_eye, 1.0);    
     
 }
