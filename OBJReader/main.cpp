@@ -61,7 +61,7 @@ int main() {
 
 	//read the necessary obj files to a vector
 	std::vector<Mesh*>* meshVec = new std::vector<Mesh*>();
-	std::string objs = "cenaPaintball.obj end"; //trout
+	std::string objs = "car.obj end"; //trout
 	istringstream ss(objs);
 	string temp;
 	ss >> temp;

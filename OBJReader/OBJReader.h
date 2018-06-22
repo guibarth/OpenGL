@@ -98,6 +98,8 @@ namespace OBJReader {
 				{
 					float x, y;
 					sstream >> x >> y;
+					//test to invert v = 1 - v to treat objs created on blender
+					y = 1.0 - y;
 					mesh->AddMapping(glm::vec2(x, y));
 					break;
 				}
