@@ -16,7 +16,7 @@
 #include "MTLReader.h"
 #include "Camera.h"
 
-
+int textureNum = 0;
 
 int main() {
 
@@ -55,7 +55,7 @@ int main() {
 
 	//read the necessary obj files to a vector
 	std::vector<Mesh*>* meshVec = new std::vector<Mesh*>();
-	std::string objs = "car.obj end"; //trout
+	std::string objs = "car.obj curve.obj end"; //trout
 	istringstream ss(objs);
 	string temp;
 	ss >> temp;
@@ -67,7 +67,7 @@ int main() {
 
 	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
 		//read MTL files to the meshes
-		(*obj)->setMaterials(MTLReader::read((*obj)->GetMeterialFile()));
+		(*obj)->setMaterials(MTLReader::read((*obj)->GetMeterialFile(), textureNum));
 	}
 
 	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {

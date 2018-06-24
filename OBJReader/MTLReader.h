@@ -21,7 +21,7 @@ public:
 	~MTLReader();
 	
 	//static map<string, Material*>* read(string filePath) {
-	static std::vector<Material*>* read(string filePath) {
+	static std::vector<Material*>* read(string filePath, int &textureNum) {
 		//map<string, Material*>* materials
 		//map<string, Material*>* materials = NULL;
 		std::vector<Material*>* materials = new std::vector<Material*>();
@@ -29,7 +29,6 @@ public:
 		cout << "Reading mtl " << filePath << endl;
 
 		Material* current = NULL;
-		int textureNum = 0;
 
 		ifstream myFile(filePath);
 		while (!myFile.eof()) {
