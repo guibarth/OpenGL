@@ -6,16 +6,23 @@ in vec3 normal_eye;
 
 uniform mat4 view;
 
+uniform vec3 ks;
+uniform vec3 kd;
+uniform vec3 ka;
+
 // fixed point light properties
-vec3 light_position_world  = vec3 (10.0, 25.0, 50.0);
+vec3 light_position_world  = vec3 (50.0, 5.0, -50.0);
 vec3 Ls = vec3 (1.0, 1.0, 1.0); // white specular colour
-vec3 Ld = vec3 (0.7, 0.7, 0.7); // dull white diffuse light colour
+vec3 Ld = vec3 (3.0, 3.0, 3.0); // dull white diffuse light colour
 vec3 La = vec3 (0.2, 0.2, 0.2); // grey ambient colour
   
 // surface reflectance
-vec3 Ks = vec3 (1.0, 1.0, 1.0); // fully reflect specular light
-vec3 Kd = vec3 (1.0, 0.5, 0.0); // orange diffuse surface reflectance
-vec3 Ka = vec3 (1.0, 1.0, 1.0); // fully reflect ambient light
+//vec3 Ks = vec3 (1.0, 1.0, 1.0); // fully reflect specular light
+//vec3 Kd = vec3 (1.0, 0.5, 0.0); // orange diffuse surface reflectance
+//vec3 Ka = vec3 (1.0, 1.0, 1.0); // fully reflect ambient light
+vec3 Ks = ks; // fully reflect specular light
+vec3 Kd = kd; // orange diffuse surface reflectance
+vec3 Ka = ka; // fully reflect ambient light
 float specular_exponent = 100.0; // specular 'power'
 
 out vec4 fragment_colour;

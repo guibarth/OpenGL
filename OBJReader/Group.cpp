@@ -157,6 +157,17 @@ void Group::Bind(std::vector<GLfloat> *vertices) {
 			int textureLocation = shaderObj->Uniform("texture1");
 			glUniform1i(textureLocation, textureId);
 
+			glm::vec3 ks3 = this->GetMaterial()->GetKs();
+			glm::vec3 kd3 = this->GetMaterial()->GetKd();
+			glm::vec3 ka3 = this->GetMaterial()->GetKa();
+
+			int ksLocation = shaderObj->Uniform("ks");
+			int kdLocation = shaderObj->Uniform("kd");
+			int kaLocation = shaderObj->Uniform("ka");
+
+			glUniform3f(ksLocation, ks3.x, ks3.y, ks3.z);
+			glUniform3f(kdLocation, kd3.x, kd3.y, kd3.z);
+			glUniform3f(kaLocation, ka3.x, ka3.y, ka3.z);
 
 
 			glActiveTexture(GL_TEXTURE0 + textureId);

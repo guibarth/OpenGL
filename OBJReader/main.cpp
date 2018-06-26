@@ -152,10 +152,18 @@ int main() {
 		if (glfwGetKey(window, 'Z') == GLFW_PRESS) {
 			view = glm::translate(view, glm::vec3(0.0f, -0.06f, 0.0f));
 		}
+		if (glfwGetKey(window, 'Q') == GLFW_PRESS) {
+			angle += 1.0f;
+			view = glm::rotate(view, glm::radians(1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		if (glfwGetKey(window, 'E') == GLFW_PRESS) {
+			angle -= 1.0f;
+			view = glm::rotate(view, glm::radians(-1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
 
 
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.5f, 0.8f, 0.9f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		coreShader->Use();
