@@ -17,6 +17,9 @@
 #include "Camera.h"
 
 int textureNum = 0;
+std::vector<glm::vec3*> *curvePoints = new std::vector<glm::vec3*>();
+
+void readCurvePoints(const GLchar* path);
 
 int main() {
 
@@ -50,8 +53,10 @@ int main() {
 	glViewport(0, 0, screenWidth, screenHeight);
 
 	Shader *coreShader = new Shader("Shaders/Core/core.vert", "Shaders/Core/core.frag");
-
 	coreShader->Use();
+
+	//read curve points to follow
+	readCurvePoints("originalCurve.txt");
 
 	//read the necessary obj files to a vector
 	std::vector<Mesh*>* meshVec = new std::vector<Mesh*>();
@@ -199,3 +204,47 @@ int main() {
 	return 0;
 }
 #endif
+
+
+void readCurvePoints(const GLchar* path) {
+
+	std::ifstream file;
+	file.exceptions(std::ifstream::badbit);
+	
+	try {
+		file.open(path);
+
+		if (!file.is_open()) {
+			std::cout << "ERROR::Curve Points::PATH ERROR";
+		}
+
+		std::string line, temp;
+		std::stringstream sstream;
+		int lineCounter = 1;
+
+		while (!file.eof()) {
+
+			sstream = std::stringstream();
+			line = temp = "";
+
+			//get first line of the file
+			std::getline(file, line);
+
+			//get content of the line
+			sstream << line;
+			sstream >> temp;
+			
+			if (temp == "v") {
+				float x, y, z;
+				sstream >> x >> y >> z;
+				curvePoints->push_back(new glm::vec3(x, y, z));
+			}			
+			lineCounter++;
+		}
+		file.close();
+	}catch (const std::ifstream::failure& e) {
+		if (!file.eof()) {
+			std::cout << "ERROR::Curve Points::FILE NOT SUCCESUFULLY READ" << std::endl;
+		}
+	}
+}
