@@ -180,6 +180,7 @@ namespace OBJReader {
 				{
 					std::string name;
 					std::getline(sstream, name);
+					name = name.substr(1, std::string::npos);
 
 					bool addGroup = true;
 					std::vector<Group*> *tempGroups = mesh->GetGroups();

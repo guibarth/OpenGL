@@ -17,9 +17,13 @@
 #include "Camera.h"
 
 int textureNum = 0;
-std::vector<glm::vec3*> *curvePoints = new std::vector<glm::vec3*>();
+float scaleFactor = 45.0f;
+
+std::vector<glm::vec3*>* curvePoints = new std::vector<glm::vec3*>();
+std::vector<glm::vec3*>* scaledCurvePoints = new std::vector<glm::vec3*>();
 
 void readCurvePoints(const GLchar* path);
+void scaleCurvePoints(std::vector<glm::vec3*>* points, float factor);
 
 int main() {
 
@@ -57,6 +61,8 @@ int main() {
 
 	//read curve points to follow
 	readCurvePoints("originalCurve.txt");
+	//scale curve points
+	scaleCurvePoints(curvePoints, scaleFactor);
 
 	//read the necessary obj files to a vector
 	std::vector<Mesh*>* meshVec = new std::vector<Mesh*>();
@@ -121,9 +127,7 @@ int main() {
 	projection = glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
 
 	float angle = 0.0f;
-
-
-
+	
 	while (!glfwWindowShouldClose(window)) {
 
 		glfwPollEvents();
@@ -162,7 +166,6 @@ int main() {
 		}
 
 
-
 		glClearColor(0.5f, 0.8f, 0.9f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -171,7 +174,6 @@ int main() {
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
 
 
 		std::vector<Group*>* currentGroups = nullptr;
@@ -191,20 +193,24 @@ int main() {
 						Material *mat = (*group)->GetMaterial();
 						if (mat->GetHasTexture()) {
 							int textureId = mat->getTextureId();
-
 							glUniform1i(textureLocation, textureId);
-							//glActiveTexture(GL_TEXTURE0);
-							//glEnable(GL_TEXTURE_2D);						
 							glBindTexture(GL_TEXTURE_2D, textureId);
-
 						}
+
+						if ((*group)->GetName() == "road") {
+							glm::mat4 transform = glm::scale(model, glm::vec3(scaleFactor));
+							glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform));
+						}else{
+							glm::mat4 transform = glm::translate(model, glm::vec3(curvePoints->at(0)->x , curvePoints->at(0)->y, curvePoints->at(0)->z));
+							glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform));
+						}
+						
 					}
 					glDrawArrays(GL_TRIANGLES, 0, (*group)->GetNumFaces() * 3);
 					glDisable(GL_TEXTURE_2D);
 				}
 			}
 		}
-
 		glfwSwapBuffers(window);
 	}
 	coreShader->Delete();
@@ -256,3 +262,30 @@ void readCurvePoints(const GLchar* path) {
 		}
 	}
 }
+
+void scaleCurvePoints(std::vector<glm::vec3*>* points, float factor) {
+	for (int i = 0; i < points->size(); i++) {
+		scaledCurvePoints->push_back(new glm::vec3(points->at(i)->x*factor, points->at(i)->y, points->at(i)->z*factor));
+	}
+	curvePoints = scaledCurvePoints;
+}
+
+
+
+/*
+//scale curve as it is small in comparison to the car
+std::vector<Group*>* allGroups = nullptr;
+for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
+allGroups = (*obj)->GetGroups();
+
+// Iterare through groups
+for (std::vector<Group*>::iterator group = allGroups->begin(); group != allGroups->end(); ++group) {
+if ((*group)->GetName() == "road") {
+glBindVertexArray((*group)->getVAO());
+glm::mat4 transform = glm::scale(model, glm::vec3(45.0f));
+glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform));
+//glm::scale();
+}
+}
+}
+*/
