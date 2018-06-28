@@ -1,13 +1,7 @@
-
-#pragma once
-#ifndef STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-
 #include <sstream>
 #include <stb_image.h>
 #include <GL\glew.h>
 #include <GLFW\glfw3.h>
-#include <SOIL.h>
 #include <GLM\glm.hpp>
 #include <GLM\gtc\matrix_transform.hpp>
 #include <GLM\gtc\type_ptr.hpp>
@@ -24,6 +18,8 @@ std::vector<glm::vec3*>* scaledCurvePoints = new std::vector<glm::vec3*>();
 
 void readCurvePoints(const GLchar* path);
 void scaleCurvePoints(std::vector<glm::vec3*>* points, float factor);
+float calculateAngle(int indexA, int indexB);
+//float getInitialAngleSync(glm::vec3* curvePoint);
 
 int main() {
 
@@ -59,45 +55,43 @@ int main() {
 	Shader *coreShader = new Shader("Shaders/Core/core.vert", "Shaders/Core/core.frag");
 	coreShader->Use();
 
-	//read curve points to follow
+	// Read and scale curve
 	readCurvePoints("originalCurve.txt");
-	//scale curve points
 	scaleCurvePoints(curvePoints, scaleFactor);
 
-	//read the necessary obj files to a vector
+	// Read other OBJ files
 	std::vector<Mesh*>* meshVec = new std::vector<Mesh*>();
-	std::string objs = "car.obj curve.obj end"; //trout
+	std::string objs = "car.obj curve.obj end";
 	istringstream ss(objs);
 	string temp;
 	ss >> temp;
 	while (temp != "end") {
-		//Mesh * tempMesh = OBJReader::Read("paintball/cenaPaintball.obj");
 		meshVec->push_back(OBJReader::Read(temp.c_str()));
 		ss >> temp;
 	}
 
 	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
-		//read MTL files to the meshes
+		// Read MTL files to the meshes
 		(*obj)->setMaterials(MTLReader::read((*obj)->GetMeterialFile(), textureNum));
 	}
 
 	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
-		//print material list for all objs
+		// Print material list for all objs
 		std::vector<Material*> *tempMats = (*obj)->GetMaterials();
 		for (std::vector<Material*>::iterator mat = tempMats->begin(); mat != tempMats->end(); ++mat) {
 			std::cout << (*mat)->GetName() << std::endl;
 		}
 	}
 
-	//assign materials to the groups within the meshes
+	// Assign materials to the groups within the meshes
 	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
 
 		std::vector<Group*> *tempGroups = (*obj)->GetGroups();
 		std::vector<Material*> *tempMaterials = (*obj)->GetMaterials();
 		std::string name;
-		//iterate through the groups and add the materials to them
+		// Iterate through the groups and add the materials to them
 		for (std::vector<Group*>::iterator it = tempGroups->begin(); it != tempGroups->end(); ++it) {
-			//set shader on the group
+			// Set shader on the group
 			(*it)->SetShader(coreShader);
 			for (std::vector<Material*>::iterator itMaterial = tempMaterials->begin(); itMaterial != tempMaterials->end(); ++itMaterial) {
 				if ((*it)->GetMaterialName() == (*itMaterial)->GetName()) {
@@ -108,15 +102,14 @@ int main() {
 		}
 	}
 
-	//bind all the meshes
+	// Bind all the meshes
 	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
 		(*obj)->Bind();
 	}
 
-
 	glm::mat4 model(1.0f);
 	int modelLoc = coreShader->Uniform("model");
-	model = glm::rotate(model, glm::radians(0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	glm::mat4 view(1.0f);
 	int viewLoc = coreShader->Uniform("view");
@@ -126,9 +119,15 @@ int main() {
 	int projLoc = coreShader->Uniform("projection");
 	projection = glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
 
+	//float angSync = getInitialAngleSync(curvePoints->at(0));
 	float angle = 0.0f;
-	
+	int movementIndex = 0;
+
 	while (!glfwWindowShouldClose(window)) {
+
+		if (movementIndex == curvePoints->size() - 10) {
+			movementIndex = 0;
+		}
 
 		glfwPollEvents();
 
@@ -165,7 +164,6 @@ int main() {
 			view = glm::rotate(view, glm::radians(-1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		}
 
-
 		glClearColor(0.5f, 0.8f, 0.9f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -178,11 +176,11 @@ int main() {
 
 		std::vector<Group*>* currentGroups = nullptr;
 
-		//iterate through the different meshes
+		// Iterate through Meshes
 		for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
 			currentGroups = (*obj)->GetGroups();
 
-			// Iterare through groups
+			// Iterare through Groups
 			for (std::vector<Group*>::iterator group = currentGroups->begin(); group != currentGroups->end(); ++group) {
 				if ((*group)->GetType() != GroupType::EMPTY && (*group)->GetType() != GroupType::NONE) {
 					glBindVertexArray((*group)->getVAO());
@@ -200,31 +198,35 @@ int main() {
 						if ((*group)->GetName() == "road") {
 							glm::mat4 transform = glm::scale(model, glm::vec3(scaleFactor));
 							glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform));
-						}else{
-							glm::mat4 transform = glm::translate(model, glm::vec3(curvePoints->at(0)->x , curvePoints->at(0)->y, curvePoints->at(0)->z));
+						}
+						else {
+							glm::mat4 transform = glm::translate(model, glm::vec3(curvePoints->at(movementIndex)->x, curvePoints->at(movementIndex)->y, curvePoints->at(movementIndex)->z));
+							angle = -calculateAngle(movementIndex, movementIndex + 5);
+							angle += 4.71239f; // Add 270º to fix initial direction from the Car							
+							transform = glm::rotate(transform, angle, glm::vec3(0, 1, 0));
 							glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform));
 						}
-						
 					}
+
 					glDrawArrays(GL_TRIANGLES, 0, (*group)->GetNumFaces() * 3);
 					glDisable(GL_TEXTURE_2D);
 				}
 			}
 		}
+
+		movementIndex += 5;
 		glfwSwapBuffers(window);
 	}
 	coreShader->Delete();
 	glfwTerminate();
 	return 0;
 }
-#endif
-
 
 void readCurvePoints(const GLchar* path) {
 
 	std::ifstream file;
 	file.exceptions(std::ifstream::badbit);
-	
+
 	try {
 		file.open(path);
 
@@ -247,16 +249,17 @@ void readCurvePoints(const GLchar* path) {
 			//get content of the line
 			sstream << line;
 			sstream >> temp;
-			
+
 			if (temp == "v") {
 				float x, y, z;
 				sstream >> x >> y >> z;
 				curvePoints->push_back(new glm::vec3(x, y, z));
-			}			
+			}
 			lineCounter++;
 		}
 		file.close();
-	}catch (const std::ifstream::failure& e) {
+	}
+	catch (const std::ifstream::failure& e) {
 		if (!file.eof()) {
 			std::cout << "ERROR::Curve Points::FILE NOT SUCCESUFULLY READ" << std::endl;
 		}
@@ -270,22 +273,33 @@ void scaleCurvePoints(std::vector<glm::vec3*>* points, float factor) {
 	curvePoints = scaledCurvePoints;
 }
 
+float calculateAngle(int indexA, int indexB) {
 
+
+	glm::vec3* a = curvePoints->at(indexA);
+	glm::vec3* b;
+
+	if (indexA == curvePoints->size() - 5) {
+		b = curvePoints->at(0);
+	}
+	else {
+		b = curvePoints->at(indexB);
+	}
+
+	GLfloat dx = b->x - a->x;
+	GLfloat dz = b->z - a->z;
+
+	GLfloat angle = glm::atan(dz, dx);
+
+	return angle;
+}
 
 /*
-//scale curve as it is small in comparison to the car
-std::vector<Group*>* allGroups = nullptr;
-for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
-allGroups = (*obj)->GetGroups();
-
-// Iterare through groups
-for (std::vector<Group*>::iterator group = allGroups->begin(); group != allGroups->end(); ++group) {
-if ((*group)->GetName() == "road") {
-glBindVertexArray((*group)->getVAO());
-glm::mat4 transform = glm::scale(model, glm::vec3(45.0f));
-glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(transform));
-//glm::scale();
-}
-}
+float getInitialAngleSync(glm::vec3* curvePoint) {
+	float ang = 0;
+	float dx = curvePoint->x - 0.0f; //car is on zero
+	float dy = 1.0f - curvePoint->y;
+	ang = glm::atan(dx, dy);
+	return ang;
 }
 */
