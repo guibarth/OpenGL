@@ -10,6 +10,9 @@
 #include "MTLReader.h"
 #include "Camera.h"
 
+#define ONE_DEG_IN_RAD 0.0174533
+#define PI 3.14
+
 int textureNum = 0;
 float scaleFactor = 45.0f;
 
@@ -31,7 +34,10 @@ int main() {
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 
-	GLFWwindow* window = glfwCreateWindow(800, 800, "OpenGL", nullptr, nullptr);
+	int width = 800;
+	int height = 600;
+
+	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL", nullptr, nullptr);
 	int screenWidth, screenHeight;
 	glfwGetFramebufferSize(window, &screenWidth, &screenHeight);
 
@@ -102,6 +108,46 @@ int main() {
 		}
 	}
 
+
+
+
+	//CAMERA
+
+
+	float cam_speed = 10.0f;
+	float orbit_speed = 25.0f;
+	float cam_yaw_speed = 2.5f;
+	float cam_pitch_speed = 1.0f;
+
+	float near = 0.1f;
+	float far = 100.0f;
+	float fov = 67.0f * ONE_DEG_IN_RAD;
+	float aspect = (float)width / (float)height;
+
+	glm::vec3 camPos(0.0f, 1.0f, 2.0f);
+	glm::vec4 forward(0.0f, 0.0f, -1.0f, 0.0f);
+	glm::vec3 targetPos(0.0f, 0.0f, 0.0f);
+	glm::mat4 rotationM = glm::mat4(1.0f);
+
+	glm::vec3 upVec(0.0, 1.0f, 0.0f);
+	glm::vec3 rightVect(1.0f, 0.0f, 0.0f);
+
+	glm::vec3 vecAux(0.0, 1.0f, 0.0f);
+
+	float pitch = 0.0f;
+	float yaw = 0.0f;
+
+	float hAngle = 0.0f;
+	float vAngle = 90.0f;
+	float distance = 2.0f;
+
+	//glm::mat4x4 view = glm::lookAt(camPos, targetPos, upVec);
+	//glm::mat4x4 projection = glm::perspective(fov, aspect, near, far);
+
+
+
+
+
 	// Bind all the meshes
 	for (std::vector<Mesh*>::iterator obj = meshVec->begin(); obj != meshVec->end(); ++obj) {
 		(*obj)->Bind();
@@ -113,11 +159,11 @@ int main() {
 
 	glm::mat4 view(1.0f);
 	int viewLoc = coreShader->Uniform("view");
-	view = glm::translate(view, glm::vec3(0.0f, -5.0f, -70.0f));
+	view = glm::lookAt(camPos, targetPos, upVec);
 
 	glm::mat4 projection(1.0f);
 	int projLoc = coreShader->Uniform("projection");
-	projection = glm::perspective(glm::radians(45.0f), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+	projection = glm::perspective(fov, aspect, near, far);;
 
 	//float angSync = getInitialAngleSync(curvePoints->at(0));
 	float angle = 0.0f;
@@ -125,12 +171,97 @@ int main() {
 
 	while (!glfwWindowShouldClose(window)) {
 
+		static double previous_seconds = glfwGetTime();
+		double current_seconds = glfwGetTime();
+		double elapsed_seconds = current_seconds - previous_seconds;
+		previous_seconds = current_seconds;
+
 		if (movementIndex == curvePoints->size() - 10) {
 			movementIndex = 0;
 		}
 
 		glfwPollEvents();
 
+
+		upVec = rotationM * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+
+		glm::vec4 forward = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+		glm::vec3 forward_rotated = rotationM * forward;
+
+		glm::vec4 right = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+		glm::vec3 right_rotated = rotationM * right;
+
+		// control keys
+		bool cam_moved = false;
+		bool flag = true;
+		
+			if (glfwGetKey(window, GLFW_KEY_A)) {
+				camPos -= right_rotated * cam_speed * (float)elapsed_seconds;
+				cam_moved = true;
+				flag = true;
+			}
+			if (glfwGetKey(window, GLFW_KEY_D)) {
+				camPos += right_rotated * cam_speed * (float)elapsed_seconds;
+				cam_moved = true;
+				flag = true;
+			}
+			if (glfwGetKey(window, GLFW_KEY_R)) {
+				camPos.y += cam_speed * elapsed_seconds;
+				cam_moved = true;
+				flag = true;
+			}
+			if (glfwGetKey(window, GLFW_KEY_F)) {
+				camPos.y -= cam_speed * elapsed_seconds;
+				cam_moved = true;
+				flag = true;
+			}
+			if (glfwGetKey(window, GLFW_KEY_W)) {
+				camPos += forward_rotated * cam_speed * (float)elapsed_seconds;
+				cam_moved = true;
+				flag = true;
+			}
+			if (glfwGetKey(window, GLFW_KEY_S)) {
+				camPos -= forward_rotated * cam_speed * (float)elapsed_seconds;
+				cam_moved = true;
+				flag = true;
+			}
+			if (glfwGetKey(window, GLFW_KEY_LEFT)) {
+				yaw += cam_yaw_speed * elapsed_seconds;
+				//cam_moved = true;
+				hAngle -= cam_speed * elapsed_seconds * orbit_speed;
+				cam_moved = true;
+				flag = true;
+			}
+			if (glfwGetKey(window, GLFW_KEY_RIGHT)) {
+				yaw -= cam_yaw_speed * elapsed_seconds;
+				//cam_moved = true;
+				hAngle += cam_speed * elapsed_seconds * orbit_speed;
+				cam_moved = true;
+				flag = true;
+			}
+			if (glfwGetKey(window, GLFW_KEY_UP)) {
+				pitch += cam_pitch_speed * elapsed_seconds;
+				vAngle -= (cam_speed-9.0) * elapsed_seconds * orbit_speed;
+				cam_moved = true;
+				flag = true;
+			}
+			if (glfwGetKey(window, GLFW_KEY_DOWN)) {
+				pitch -= cam_pitch_speed * elapsed_seconds;
+				vAngle += (cam_speed-9.0) * elapsed_seconds * orbit_speed;
+				cam_moved = true;
+				flag = true;
+			}
+
+			//if (glfwGetKey(g_window, GLFW_KEY_Q)) {
+			//	pitch += cam_pitch_speed * elapsed_seconds;
+			//	cam_moved = true;
+			//}
+			//if (glfwGetKey(g_window, GLFW_KEY_E)) {
+			//	pitch -= cam_pitch_speed * elapsed_seconds;
+			//	cam_moved = true;
+			//}
+
+/*
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 			glfwSetWindowShouldClose(window, GLFW_TRUE);
 		}
@@ -162,6 +293,55 @@ int main() {
 		if (glfwGetKey(window, 'E') == GLFW_PRESS) {
 			angle -= 1.0f;
 			view = glm::rotate(view, glm::radians(-1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+
+		*/
+
+
+		if (cam_moved) {
+
+			if (flag == false) {
+
+				float theta = hAngle * PI / 180;
+				float phi = vAngle * PI / 180;
+
+				camPos.x = targetPos.x + (distance * sin(phi) * sin(theta));
+				camPos.y = targetPos.y + (distance * cos(phi));
+				camPos.z = targetPos.z + (distance * cos(theta) * sin(phi));
+
+			}
+			else {
+
+				glm::mat4 matPitch = glm::mat4(1.0f);
+				glm::mat4 matYaw = glm::mat4(1.0f);
+
+
+				matPitch = glm::rotate(matPitch, pitch, rightVect);
+				matYaw = glm::rotate(matYaw, yaw, vecAux);
+
+				rotationM = matYaw * matPitch;
+
+				glm::vec4 forward = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+				glm::vec3 forward_rotated = rotationM * forward;
+
+				//targetPos = camPos + glm::vec3(forward_rotated.x, forward_rotated.y, forward_rotated.z);
+				
+				targetPos.x = camPos.x + forward_rotated.x;
+				targetPos.z = camPos.z + forward_rotated.z;
+				targetPos.y = camPos.y + forward_rotated.y;
+			}
+				
+			
+				
+			//right_rotated = glm::cross(targetPos - camPos, upVec);
+			//upVec = glm::cross(right_rotated, targetPos - camPos);
+
+			view = glm::lookAt(camPos, targetPos, upVec);
+			glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
+		}
+
+		if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+			glfwSetWindowShouldClose(window, 1);
 		}
 
 		glClearColor(0.5f, 0.8f, 0.9f, 1.0f);
