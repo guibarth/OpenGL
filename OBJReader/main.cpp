@@ -34,8 +34,8 @@ int main() {
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	glfwWindowHint(GLFW_SAMPLES, 4);
 
-	int width = 800;
-	int height = 600;
+	int width = 1024;
+	int height = 768;
 
 	GLFWwindow* window = glfwCreateWindow(width, height, "OpenGL", nullptr, nullptr);
 	int screenWidth, screenHeight;
@@ -193,63 +193,46 @@ int main() {
 
 		// control keys
 		bool cam_moved = false;
-		bool flag = true;
 		
 			if (glfwGetKey(window, GLFW_KEY_A)) {
 				camPos -= right_rotated * cam_speed * (float)elapsed_seconds;
 				cam_moved = true;
-				flag = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_D)) {
 				camPos += right_rotated * cam_speed * (float)elapsed_seconds;
 				cam_moved = true;
-				flag = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_R)) {
 				camPos.y += cam_speed * elapsed_seconds;
 				cam_moved = true;
-				flag = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_F)) {
 				camPos.y -= cam_speed * elapsed_seconds;
 				cam_moved = true;
-				flag = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_W)) {
 				camPos += forward_rotated * cam_speed * (float)elapsed_seconds;
 				cam_moved = true;
-				flag = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_S)) {
 				camPos -= forward_rotated * cam_speed * (float)elapsed_seconds;
 				cam_moved = true;
-				flag = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_LEFT)) {
 				yaw += cam_yaw_speed * elapsed_seconds;
-				//cam_moved = true;
-				hAngle -= cam_speed * elapsed_seconds * orbit_speed;
 				cam_moved = true;
-				flag = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_RIGHT)) {
 				yaw -= cam_yaw_speed * elapsed_seconds;
-				//cam_moved = true;
-				hAngle += cam_speed * elapsed_seconds * orbit_speed;
 				cam_moved = true;
-				flag = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_UP)) {
 				pitch += cam_pitch_speed * elapsed_seconds;
-				vAngle -= (cam_speed-9.0) * elapsed_seconds * orbit_speed;
 				cam_moved = true;
-				flag = true;
 			}
 			if (glfwGetKey(window, GLFW_KEY_DOWN)) {
 				pitch -= cam_pitch_speed * elapsed_seconds;
-				vAngle += (cam_speed-9.0) * elapsed_seconds * orbit_speed;
 				cam_moved = true;
-				flag = true;
 			}
 
 			//if (glfwGetKey(g_window, GLFW_KEY_Q)) {
@@ -300,17 +283,6 @@ int main() {
 
 		if (cam_moved) {
 
-			if (flag == false) {
-
-				float theta = hAngle * PI / 180;
-				float phi = vAngle * PI / 180;
-
-				camPos.x = targetPos.x + (distance * sin(phi) * sin(theta));
-				camPos.y = targetPos.y + (distance * cos(phi));
-				camPos.z = targetPos.z + (distance * cos(theta) * sin(phi));
-
-			}
-			else {
 
 				glm::mat4 matPitch = glm::mat4(1.0f);
 				glm::mat4 matYaw = glm::mat4(1.0f);
@@ -329,7 +301,7 @@ int main() {
 				targetPos.x = camPos.x + forward_rotated.x;
 				targetPos.z = camPos.z + forward_rotated.z;
 				targetPos.y = camPos.y + forward_rotated.y;
-			}
+			
 				
 			
 				

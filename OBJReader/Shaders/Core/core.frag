@@ -43,7 +43,7 @@ void main () {
 	vec3 distance_to_light_eye = light_position_eye - position_eye;
 	vec3 direction_to_light_eye = normalize (distance_to_light_eye);
 	float dot_prod = dot (direction_to_light_eye, n_eye);
-	dot_prod = max (dot_prod, 0.0);
+	dot_prod = max (dot_prod, 0.4);
 	vec3 Id = Ld * Kd * dot_prod; // final diffuse intensity
 	
 	// specular intensity
